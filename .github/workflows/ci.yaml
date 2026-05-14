@@ -16,13 +16,8 @@ jobs:
     defaults:
       run:
         working-directory: codebase/rdicidr-0.1.0
-    outputs:
-      node-modules-cache-key: ${{ steps.cache-meta.outputs.key }}
     steps:
       - uses: actions/checkout@v4
-      - id: cache-meta
-        run: |
-          echo "key=node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -37,7 +32,7 @@ jobs:
       - uses: actions/cache/save@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: ${{ steps.cache-meta.outputs.key }}
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
 
   lint:
     name: Lint (ESLint)
@@ -54,7 +49,7 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: ${{ needs.install.outputs.node-modules-cache-key }}
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
       - run: npm run lint
 
   test:
@@ -74,7 +69,7 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: ${{ needs.install.outputs.node-modules-cache-key }}
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
       - run: CI=true npm run test -- --watchAll=false
 
   build:
@@ -94,5 +89,5 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: ${{ needs.install.outputs.node-modules-cache-key }}
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
       - run: npm run build

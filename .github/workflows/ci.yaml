@@ -50,7 +50,14 @@ jobs:
         with:
           path: codebase/rdicidr-0.1.0/node_modules
           key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
-      - run: npm run lint
+      - name: Lint (ESLint)
+        run: |
+          if [ ! -x node_modules/.bin/eslint ]; then
+            npm config set engine-strict false
+            npm install --no-audit --no-fund
+            npm install prettier@2.8.8 eslint-config-prettier@8.10.0 eslint-plugin-prettier@3.4.1 eslint@7.29.0 --no-save --no-audit --no-fund
+          fi
+          npx eslint ./src/
 
   test:
     name: Test (Jest)

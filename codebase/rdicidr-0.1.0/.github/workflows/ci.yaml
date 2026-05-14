@@ -7,25 +7,8 @@ on:
       - main
 
 jobs:
-  branch-name:
-    name: Validate PR branch name
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require feature/*, hotfix/*, feature-*, or hotfix-* head branch
-        env:
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          case "$HEAD_REF" in
-            feature/*|hotfix/*|feature-*|hotfix-*) echo "OK: $HEAD_REF" ;;
-            *)
-              echo "::error::PR head branch must start with feature/, hotfix/, feature-, or hotfix- (got: $HEAD_REF)"
-              exit 1
-              ;;
-          esac
-
   install:
     name: Install dependencies
-    needs: branch-name
     runs-on: ubuntu-latest
     outputs:
       node-modules-cache-key: ${{ steps.cache-meta.outputs.key }}

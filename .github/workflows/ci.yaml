@@ -13,27 +13,34 @@ jobs:
   install:
     name: Install dependencies
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codebase/rdicidr-0.1.0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: codebase/rdicidr-0.1.0/package-lock.json
       - name: Install dependencies
         run: |
           npm config set engine-strict false
           npm install --no-audit --no-fund
+          # eslint-plugin-prettier@3 needs Prettier 2 API; stale locks may still pull Prettier 3
           npm install prettier@2.8.8 eslint-config-prettier@8.10.0 eslint-plugin-prettier@3.4.1 eslint@7.29.0 --no-save --no-audit --no-fund
       - uses: actions/cache/save@v4
         with:
-          path: node_modules
-          key: node-modules-${{ github.run_id }}-${{ hashFiles('package-lock.json') }}
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
 
   lint:
     name: Lint (ESLint)
     needs: install
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codebase/rdicidr-0.1.0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,8 +48,8 @@ jobs:
           node-version: "20"
       - uses: actions/cache/restore@v4
         with:
-          path: node_modules
-          key: node-modules-${{ github.run_id }}-${{ hashFiles('package-lock.json') }}
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
       - name: Lint (ESLint)
         run: |
           if [ ! -x node_modules/.bin/eslint ] || [ ! -d node_modules/react-scripts ]; then
@@ -56,6 +63,9 @@ jobs:
     name: Test (Jest)
     needs: lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codebase/rdicidr-0.1.0
     env:
       CI: true
     steps:
@@ -65,8 +75,8 @@ jobs:
           node-version: "20"
       - uses: actions/cache/restore@v4
         with:
-          path: node_modules
-          key: node-modules-${{ github.run_id }}-${{ hashFiles('package-lock.json') }}
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
       - name: Test (Jest)
         env:
           CI: true
@@ -82,6 +92,9 @@ jobs:
     name: Build
     needs: test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codebase/rdicidr-0.1.0
     env:
       GENERATE_SOURCEMAP: "false"
     steps:
@@ -91,8 +104,8 @@ jobs:
           node-version: "20"
       - uses: actions/cache/restore@v4
         with:
-          path: node_modules
-          key: node-modules-${{ github.run_id }}-${{ hashFiles('package-lock.json') }}
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
       - name: Build
         run: |
           if [ ! -d node_modules/react-scripts ]; then

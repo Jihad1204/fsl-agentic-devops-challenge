@@ -1,12 +1,8 @@
 name: CI Pipeline
 
 on:
-  push:
-    branches:
-      - main
-      - 'feature-*'
-      - 'hotfix-*'
   pull_request:
+    types: [opened, reopened, synchronize]
     branches:
       - main
 
@@ -14,64 +10,89 @@ defaults:
   run:
     working-directory: codebase/rdicidr-0.1.0
 
-env:
-  CI: true
-
 jobs:
-  install:
+  branch-name:
+    name: Validate PR branch name
     runs-on: ubuntu-latest
     steps:
+      - name: Require feature/*, hotfix/*, feature-*, or hotfix-* head branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            feature/*|hotfix/*|feature-*|hotfix-*) echo "OK: $HEAD_REF" ;;
+            *)
+              echo "::error::PR head branch must start with feature/, hotfix/, feature-, or hotfix- (got: $HEAD_REF)"
+              exit 1
+              ;;
+          esac
+
+  install:
+    name: Install dependencies
+    needs: branch-name
+    runs-on: ubuntu-latest
+    outputs:
+      node-modules-cache-key: ${{ steps.cache-meta.outputs.key }}
+    steps:
       - uses: actions/checkout@v4
+      - id: cache-meta
+        run: |
+          echo "key=node-modules-${{ github.run_id }}-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: "14"
           cache: npm
           cache-dependency-path: codebase/rdicidr-0.1.0/package-lock.json
       - run: npm config set engine-strict false
-      - run: npm ci
+      - run: npm install
       - uses: actions/cache/save@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+          key: ${{ steps.cache-meta.outputs.key }}
 
   lint:
+    name: Lint (ESLint)
     needs: install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: "14"
       - uses: actions/cache/restore@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+          key: ${{ needs.install.outputs.node-modules-cache-key }}
       - run: npm run lint
 
   test:
-    needs: install
+    name: Test (Jest)
+    needs: lint
     runs-on: ubuntu-latest
+    env:
+      CI: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: "14"
       - uses: actions/cache/restore@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
-      - run: npm test -- --watchAll=false
+          key: ${{ needs.install.outputs.node-modules-cache-key }}
+      - run: CI=true npm run test
 
   build:
-    needs: install
+    name: Build
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: "14"
       - uses: actions/cache/restore@v4
         with:
           path: codebase/rdicidr-0.1.0/node_modules
-          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+          key: ${{ needs.install.outputs.node-modules-cache-key }}
       - run: npm run build

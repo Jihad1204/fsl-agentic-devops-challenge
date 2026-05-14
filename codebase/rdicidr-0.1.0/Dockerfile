@@ -1,5 +1,6 @@
-FROM node:15-alpine as builder
+FROM node:20-alpine AS builder
 WORKDIR /app
+ENV NODE_OPTIONS=--openssl-legacy-provider
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
